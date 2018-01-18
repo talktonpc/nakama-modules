@@ -31,6 +31,11 @@ local HTTP_REQUEST = nk.http_request
 
 local onesignal = {}
 
+local onesignal_mt = {
+  __name = "onesignal_object",
+  __index = onesignal
+}
+
 local function table_merge(first, second)
   for _, v in ipairs(second)
   do
@@ -222,7 +227,7 @@ local function new_onesignal(apikey, appid)
     apikey = apikey,
     appid = appid or "mustsetappid",
     auth_header_val = ("Basic %s"):format(apikey)
-  }, onesignal)
+  }, onesignal_mt)
   return self
 end
 
