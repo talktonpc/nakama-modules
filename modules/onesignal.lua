@@ -41,6 +41,13 @@ local function table_merge(first, second)
   do
     table.insert(first, v)
   end
+
+  for k, v in pairs(second)
+  do
+    first[k] = v
+  end
+
+  return first
 end
 
 --[[
