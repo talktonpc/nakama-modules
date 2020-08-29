@@ -184,7 +184,7 @@ function onesignal:create_notification(contents, headings, included_segments, fi
     content.filters = filters
   end
   if (player_ids) then
-    content.included_player_ids = player_ids
+    content.include_player_ids = player_ids
   end
   content = table_merge(content, params or {})
   local json = nk.json_encode(content)
