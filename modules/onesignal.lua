@@ -21,7 +21,7 @@ local nk = require("nakama")
 ]]--
 
 local MODULE_VERSION = "0.1.0"
-local SDK_VERSION = ("nakama-onesignal/%s"):format(MODULE_VERSION)
+local SDK_VERSION = string.format("nakama-onesignal/%s", MODULE_VERSION)
 local BASE_URL = "https://onesignal.com/api/v1"
 local BASE_HEADERS = {
   ["Accept"] = "application/json",
@@ -54,14 +54,14 @@ end
   Display OneSignal "object" in a readable way when printed.
 ]]--
 function onesignal:__tostring()
-  return ("onesignal{apikey=%q, appid=%q}"):format(self.apikey, self.appid)
+  return string.format("onesignal{apikey=%q, appid=%q}", self.apikey, self.appid)
 end
 
 --[[
   Register a new device with OneSignal.
 ]]--
 function onesignal:add_device(device_type, identifier, language, tags, params)
-  local url = ("%s/players"):format(BASE_URL)
+  local url = string.format("%s/players", BASE_URL)
   local method = "POST"
   local headers = table_merge({
     ["Authorization"] = self.auth_header_val
@@ -77,13 +77,13 @@ function onesignal:add_device(device_type, identifier, language, tags, params)
   local json = nk.json_encode(content)
   local success, code, _, resp = pcall(HTTP_REQUEST, url, method, headers, json)
   if (not success) then
-    nk.logger_error(("Failed %q"):format(code))
+    nk.logger_error(string.format("Failed %q", code))
     error(code)
   elseif (code >= 400) then
-    nk.logger_error(("Failed %q %q"):format(code, resp))
+    nk.logger_error(string.format("Failed %q %q", code, resp))
     error(resp)
   else
-    nk.logger_info(("Success %q %q"):format(code, resp))
+    nk.logger_info(string.format("Success %q %q", code, resp))
     -- resp -> {"success": true, "id": "ffffb794-ba37-11e3-8077-031d62f86ebf"}
     return nk.json_decode(resp)
   end
@@ -93,7 +93,7 @@ end
   Update an existing device within a OneSignal app.
 ]]--
 function onesignal:edit_device(device_id, identifier, language, tags, params)
-  local url = ("%s/players/%s"):format(BASE_URL, device_id)
+  local url = string.format("%s/players/%s", BASE_URL, device_id)
   local method = "PUT"
   local headers = table_merge({
     ["Authorization"] = self.auth_header_val
@@ -108,13 +108,13 @@ function onesignal:edit_device(device_id, identifier, language, tags, params)
   local json = nk.json_encode(content)
   local success, code, _, resp = pcall(HTTP_REQUEST, url, method, headers, json)
   if (not success) then
-    nk.logger_error(("Failed %q"):format(code))
+    nk.logger_error(string.format("Failed %q", code))
     error(code)
   elseif (code >= 400) then
-    nk.logger_error(("Failed %q %q"):format(code, resp))
+    nk.logger_error(string.format("Failed %q %q", code, resp))
     error(resp)
   else
-    nk.logger_info(("Success %q %q"):format(code, resp))
+    nk.logger_info(string.format("Success %q %q", code, resp))
     -- resp -> {"success": true, "id": "ffffb794-ba37-11e3-8077-031d62f86ebf"}
     return nk.json_decode(resp)
   end
@@ -124,7 +124,7 @@ end
   Report a new session is active for the {@code player_id}.
 ]]--
 function onesignal:new_session(player_id, identifier, language, tags, params)
-  local url = ("%s/players/%s/on_session"):format(BASE_URL, player_id)
+  local url = string.format("%s/players/%s/on_session", BASE_URL, player_id)
   local method = "POST"
   local headers = table_merge({
     ["Authorization"] = self.auth_header_val
@@ -138,13 +138,13 @@ function onesignal:new_session(player_id, identifier, language, tags, params)
   local json = nk.json_encode(content)
   local success, code, _, resp = pcall(HTTP_REQUEST, url, method, headers, json)
   if (not success) then
-    nk.logger_error(("Failed %q"):format(code))
+    nk.logger_error(string.format("Failed %q", code))
     error(code)
   elseif (code >= 400) then
-    nk.logger_error(("Failed %q %q"):format(code, resp))
+    nk.logger_error(string.format("Failed %q %q", code, resp))
     error(resp)
   else
-    nk.logger_info(("Success %q %q"):format(code, resp))
+    nk.logger_info(string.format("Success %q %q", code, resp))
     -- resp -> {"success": true}
     return nk.json_decode(resp)
   end
@@ -167,7 +167,7 @@ function onesignal:create_notification(contents, headings, included_segments, fi
     error("'player_ids' param must have at least one value.")
   end
 
-  local url = ("%s/notifications"):format(BASE_URL)
+  local url = string.format("%s/notifications", BASE_URL)
   local method = "POST"
   local headers = table_merge({
     ["Authorization"] = self.auth_header_val
@@ -190,13 +190,13 @@ function onesignal:create_notification(contents, headings, included_segments, fi
   local json = nk.json_encode(content)
   local success, code, _, resp = pcall(HTTP_REQUEST, url, method, headers, json)
   if (not success) then
-    nk.logger_error(("Failed %q"):format(code))
+    nk.logger_error(string.format("Failed %q", code))
     error(code)
   elseif (code >= 400) then
-    nk.logger_error(("Failed %q %q"):format(code, resp))
+    nk.logger_error(string.format("Failed %q %q", code, resp))
     error(resp)
   else
-    nk.logger_info(("Success %q %q"):format(code, resp))
+    nk.logger_info(string.format("Success %q %q", code, resp))
     -- resp -> {"id": "458dcec4-cf53-11e3-add2-000c2940e62c", "recipients": 3}
     return nk.json_decode(resp)
   end
@@ -206,20 +206,20 @@ end
   Stop a scheduled or currently outgoing notification.
 ]]--
 function onesignal:cancel_notification(notification_id)
-  local url = ("%s/notifications/%s?app_id=%s"):format(BASE_URL, notification_id, self.appid)
+  local url = string.format("%s/notifications/%s?app_id=%s", BASE_URL, notification_id, self.appid)
   local method = "DELETE"
   local headers = table_merge({
     ["Authorization"] = self.auth_header_val
   }, BASE_HEADERS)
   local success, code, _, resp = pcall(HTTP_REQUEST, url, method, headers, nil)
   if (not success) then
-    nk.logger_error(("Failed %q"):format(code))
+    nk.logger_error(string.format("Failed %q", code))
     error(code)
   elseif (code >= 400) then
-    nk.logger_error(("Failed %q %q"):format(code, resp))
+    nk.logger_error(string.format("Failed %q %q", code, resp))
     error(resp)
   else
-    nk.logger_info(("Success %q %q"):format(code, resp))
+    nk.logger_info(string.format("Success %q %q", code, resp))
     -- resp -> {'success': "true"}
     return nk.json_decode(resp)
   end
@@ -233,7 +233,7 @@ local function new_onesignal(apikey, appid)
   local self = setmetatable({
     apikey = apikey,
     appid = appid or "mustsetappid",
-    auth_header_val = ("Basic %s"):format(apikey)
+    auth_header_val = string.format("Basic %s", apikey)
   }, onesignal_mt)
   return self
 end
