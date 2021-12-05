@@ -46,7 +46,6 @@ local function create_or_join_match(context, payload)
     local response = nk.json_encode({ matchID = match_id })
     return response
   end
-  nk.register_rpc(create_or_join_match, "rpc.machoo.world.join")
 
 -- ===========================================================================
 -- Gets the array of names currently in circulation out of non-user-owned storage.
@@ -170,9 +169,11 @@ end
 
 -- ===========================================================================
 -- RPC registered to Nakama
-nakama.register_rpc(get_world_id, "get_world_id")
-nakama.register_rpc(register_character_name, "register_character_name")
-nakama.register_rpc(remove_character_name, "remove_character_name")
+
+nk.register_rpc(create_or_join_match, "rpc.machoo.world.join")
+nk.register_rpc(get_world_id, "rpc.machoo.world.get-world-id")
+nk.register_rpc(register_character_name, "rpc.machoo.world.register-character-name")
+nk.register_rpc(remove_character_name, "rpc.machoo.world.remove-character-name")
 
 nk.run_once(function(ctx)
 end)
