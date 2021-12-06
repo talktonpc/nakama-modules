@@ -1,4 +1,5 @@
 local nk = require("nakama")
+local debug = require("debug")
 
 -- ===========================================================================
 local function create_or_join_match(context, payload)
@@ -168,14 +169,35 @@ local function register_character_name(_, payload)
 end
 
 -- ===========================================================================
+local function rcp_account_update(context, data)
+    nk.logger_info(debug.dump(context));
+
+    local metadata = nk.json_decode(data)
+
+    nk.logger_info(debug.dump(data));
+
+    local user_id = context["user_id"];
+    local username = context["username"];
+    local display_name = context["vars"]["nickname"]
+    local timezone = "Asia/Seoul"
+    local location = "서울"
+    local language = "ko"
+    local avatar_url = "http://cdn.utopsoft.co.kr/metatop/accounts/avatar/" .. user_id .. ".png"
+
+    nk.account_update_id(user_id, metadata, username, display_name, timezone, location, language, avatar_url)
+
+    return "1";
+
+end
+
+-- ===========================================================================
 -- RPC registered to Nakama
 
 nk.register_rpc(create_or_join_match, "rpc.machoo.world.join")
+nk.register_rpc(rcp_account_update, "rpc.machoo.account.update")
+
 nk.register_rpc(get_world_id, "rpc.machoo.world.get-world-id")
 nk.register_rpc(register_character_name, "rpc.machoo.world.register-character-name")
 nk.register_rpc(remove_character_name, "rpc.machoo.world.remove-character-name")
-
-nk.run_once(function(ctx)
-end)
 
 -- ========================================================================END

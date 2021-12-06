@@ -85,7 +85,8 @@ function world.match_join(context, dispatcher, tick, state, presences)
 
         state.positions[presence.user_id] = {
             ["x"] = 0,
-            ["y"] = 0
+            ["y"] = 0,
+            ["z"] = 0
         }
 
         state.inputs[presence.user_id] = {
