@@ -14,7 +14,7 @@ services:
       - "5432"
     ports:
       - "5432:5432"
-      - "8080:8080"
+      - "7070:8080"
   nakama:
     container_name: nakama
     image: lonycell/nakama-server:v3.9.1-meta
