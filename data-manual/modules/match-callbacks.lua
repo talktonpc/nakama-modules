@@ -1,8 +1,6 @@
 local nk = require("nakama")
 local d = require("debug")
 
-
-
 local function MatchCreate(context, payload)
     nk.logger_info("MatchCreate ===========================")
     nk.logger_info(d.dump(context))

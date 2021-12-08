@@ -1,67 +1,61 @@
 local nk = require("nakama")
+local debug = require("debug")
+
 local world = {}
-
--- Custom operation codes. Nakama specific codes are <= 0.
-local OpCodes = {
-    update_position = 1,
-    update_input = 2,
-    update_state = 3,
-    update_jump = 4,
-    do_spawn = 5,
-    update_color = 6,
-    initial_state = 7
-}
-
--- Command pattern table for boiler plate updates that uses data and state.
 local commands = {}
 
--- Updates the position in the game state
-commands[OpCodes.update_position] = function(data, state)
+local Operations = {
+    op_state = 1,
+    op_location = 2,
+    op_input = 3,
+    op_pose = 4,
+    op_item = 5,
+    op_spawn = 6
+}
+
+local Pose = {
+    idle = 0,
+    stand = 1,
+    walk = 2,
+    run = 3,
+    seat = 4
+}
+
+local SPAWN_POSITION = {-9.01, 0.0, -3.02}
+
+commands[Operations.op_state] = function(data, state)
+end
+
+commands[Operations.op_location] = function(data, state)
+    -- nk.logger_info(debug.dump(data));
+    -- nk.logger_info(debug.dump(state));
+
     local id = data.id
-    local position = data.pos
-    if state.positions[id] ~= nil then
-        state.positions[id] = position
+    local location = data
+    if state.locations[id] ~= nil then
+        state.locations[id].x = location.x
+        state.locations[id].y = location.y
+        state.locations[id].z = location.z
     end
 end
 
--- Updates the horizontal input direction in the game state
-commands[OpCodes.update_input] = function(data, state)
+commands[Operations.op_input] = function(data, state)
     local id = data.id
-    local input = data.inp
+    local input = data
     if state.inputs[id] ~= nil then
-        state.inputs[id].dir = input
+        state.inputs[id].direction = input.direction
+        state.inputs[id].jump = input.jump
     end
 end
 
--- Updates whether a character jumped in the game state
-commands[OpCodes.update_jump] = function(data, state)
+commands[Operations.op_pose] = function(data, state)
     local id = data.id
-    if state.inputs[id] ~= nil then
-        state.inputs[id].jmp = 1
-    end
-end
-
--- Updates the character color in the game state once the player's picked a character
-commands[OpCodes.do_spawn] = function(data, state)
-    local id = data.id
-    local color = data.col
-    if state.colors[id] ~= nil then
-        state.colors[id] = color
-    end
-end
-
--- Updates the character color in the game state after a player's changed colors
-commands[OpCodes.update_color] = function(data, state)
-    local id = data.id
-    local color = data.col
-    if state.colors[id] ~= nil then
-        state.colors[id] = color
+    if state.poses[id] ~= nil then
+        state.poses[id] = data.pose
     end
 end
 
 function world.match_init(context, state)
-    nk.logger_info("match_init ===========================")
-
     local tickrate = state["tickrate"]
     local label = state["label"]
 
@@ -69,132 +63,161 @@ function world.match_init(context, state)
 end
 
 function world.match_join_attempt(context, dispatcher, tick, state, presence, metadata)
-    nk.logger_info("match_join_attempt ===========================")
-
-    if state.presences[presence.user_id] ~= nil then
+    if state.presences[presence.session_id] ~= nil then
         return state, false, "User already logged in."
     end
     return state, true
 end
 
 function world.match_join(context, dispatcher, tick, state, presences)
-    nk.logger_info("match_join ===========================")
+    -- nk.logger_info(debug.dump(context));
+    -- nk.logger_info(debug.dump(state));
+    -- nk.logger_info(debug.dump(presences));
 
     for _, presence in ipairs(presences) do
-        state.presences[presence.user_id] = presence
-
-        state.positions[presence.user_id] = {
-            ["x"] = 0,
-            ["y"] = 0,
-            ["z"] = 0
+        local id = presence.session_id
+        state.presences[id] = presence
+        state.locations[id] = {
+            ["x"] = SPAWN_POSITION[1],
+            ["y"] = SPAWN_POSITION[2],
+            ["z"] = SPAWN_POSITION[3]
         }
-
-        state.inputs[presence.user_id] = {
-            ["dir"] = 0,
-            ["jmp"] = 0
+        state.inputs[id] = {
+            ["direction"] = 0,
+            ["jump"] = 0
         }
-
-        state.colors[presence.user_id] = "1,1,1,1"
-
-        state.names[presence.user_id] = "User"
+        state.poses[id] = Pose.stand
     end
+
+    -- nk.logger_info(debug.dump(state));
 
     return state
 end
 
 function world.match_leave(context, dispatcher, tick, state, presences)
-    nk.logger_info("match_leave ===========================")
-
     for _, presence in ipairs(presences) do
-        local new_objects = {
-            {
-                collection = "player_data",
-                key = "position_" .. state.names[presence.user_id],
-                user_id = presence.user_id,
-                value = state.positions[presence.user_id]
-            }
-        }
-        nk.storage_write(new_objects)
+        local id = presence.user_id
+        -- local new_objects = {
+        --     {
+        --         collection = "player_data",
+        --         key = "location_" .. id,
+        --         user_id = id,
+        --         value = state.locations[id]
+        --     }
+        -- }
+        -- nk.storage_write(new_objects)
 
-        state.presences[presence.user_id] = nil
-        state.positions[presence.user_id] = nil
-        state.inputs[presence.user_id] = nil
-        state.jumps[presence.user_id] = nil
-        state.colors[presence.user_id] = nil
-        state.names[presence.user_id] = nil
+        state.presences[id] = nil
+        state.locations[id] = nil
+        state.poses[id] = nil
+        state.inputs[id] = nil
+        state.items[id] = nil
     end
+
     return state
 end
 
 function world.match_loop(context, dispatcher, tick, state, messages)
     for _, message in ipairs(messages) do
-        local op_code = message.op_code
 
-        local decoded = nk.json_decode(message.data)
+        -- nk.logger_info(debug.dump(context));
+        -- nk.logger_info(debug.dump(state));
+        -- nk.logger_info(debug.dump(messages));
 
-        -- Run boiler plate commands (state updates.)
-        local command = commands[op_code]
-        if command ~= nil then
-            commands[op_code](decoded, state)
+        local op = message.op_code
+
+        if op == nil then
+            return status
         end
 
-        -- A client has selected a character and is spawning. Get or generate position data,
-        -- send them initial state, and broadcast their spawning to existing clients.
-        if op_code == OpCodes.do_spawn then
+        local command = commands[op]
+        if command ~= nil then
+            local decoded = nk.json_decode(message.data)
+            commands[op](decoded, state)
+        else
+            return status
+        end
+
+        if op == Operations.op_state then
+        end
+
+        if op == Operations.op_location then
+            local data = {
+                ["locations"] = state.locations
+            }
+
+            local encoded = nk.json_encode(data)
+            dispatcher.broadcast_message(Operations.op_location, encoded)
+        end
+
+        if op == Operations.op_input then
+            local data = {
+                ["inputs"] = state.inputs
+            }
+        
+            local encoded = nk.json_encode(data)
+            dispatcher.broadcast_message(Operations.op_input, encoded)
+        end
+
+        if op == Operations.op_pose then
+            local data = {
+                ["poses"] = state.poses
+            }
+        
+            local encoded = nk.json_encode(data)
+            dispatcher.broadcast_message(Operations.op_pose, encoded)
+        end
+
+        if op == Operations.op_item then
+            local data = {
+                ["poses"] = state.items
+            }
+        
+            local encoded = nk.json_encode(data)
+            dispatcher.broadcast_message(Operations.op_item, encoded)
+        end
+
+        if op == Operations.op_spawn then
             local object_ids = {
                 {
                     collection = "player_data",
-                    key = "position_" .. decoded.nm,
-                    user_id = message.sender.user_id
+                    key = "location_" .. decoded.nm,
+                    session_id = message.sender.session_id
                 }
             }
 
             local objects = nk.storage_read(object_ids)
 
-            local position
+            local location
             for _, object in ipairs(objects) do
-                position = object.value
-                if position ~= nil then
-                    state.positions[message.sender.user_id] = position
+                location = object.value
+                if location ~= nil then
+                    state.locations[message.sender.session_id] = location
                     break
                 end
             end
 
-            if position == nil then
-                state.positions[message.sender.user_id] = {
+            if location == nil then
+                state.locations[message.sender.session_id] = {
                     ["x"] = SPAWN_POSITION[1],
-                    ["y"] = SPAWN_POSITION[2]
+                    ["y"] = SPAWN_POSITION[2],
+                    ["z"] = SPAWN_POSITION[3],
                 }
             end
 
-            state.names[message.sender.user_id] = decoded.nm
-
             local data = {
-                ["pos"] = state.positions,
-                ["inp"] = state.inputs,
-                ["col"] = state.colors,
-                ["nms"] = state.names
+                ["location"] = state.locations,
+                ["input"] = state.inputs,
+                ["col"] = state.items,
             }
 
             local encoded = nk.json_encode(data)
-            dispatcher.broadcast_message(OpCodes.initial_state, encoded, {message.sender})
-
-            dispatcher.broadcast_message(OpCodes.do_spawn, message.data)
-        elseif op_code == OpCodes.update_color then
-            dispatcher.broadcast_message(OpCodes.update_color, message.data)
+            dispatcher.broadcast_message(Operations.op_spawn, message.data)
         end
     end
-    
-    local data = {
-        ["pos"] = state.positions,
-        ["inp"] = state.inputs
-    }
-    local encoded = nk.json_encode(data)
-
-    dispatcher.broadcast_message(OpCodes.update_state, encoded)
 
     for _, input in pairs(state.inputs) do
-        input.jmp = 0
+        input.jump = 0
     end
 
     return state
@@ -203,20 +226,20 @@ end
 function world.match_terminate(context, dispatcher, tick, state, grace_seconds)
     nk.logger_info("match_terminate ===========================")
 
-    local new_objects = {}
-    for k, position in pairs(state.positions) do
-        table.insert(
-            new_objects,
-            {
-                collection = "player_data",
-                key = "position_" .. state.names[k],
-                user_id = k,
-                value = position
-            }
-        )
-    end
+    -- local new_objects = {}
+    -- for k, location in pairs(state.locations) do
+    --     table.insert(
+    --         new_objects,
+    --         {
+    --             collection = "player_data",
+    --             key = "location_" .. state.names[k],
+    --             session_id = k,
+    --             value = location
+    --         }
+    --     )
+    -- end
 
-    nk.storage_write(new_objects)
+    -- nk.storage_write(new_objects)
 
     return state
 end
@@ -224,7 +247,7 @@ end
 function world.match_signal(context, dispatcher, tick, state, data)
     nk.logger_info("match_signal ===========================")
 
-    return state, "signal received: " .. data
+    return state, data
 end
 
 return world
