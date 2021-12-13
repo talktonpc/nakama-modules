@@ -70,9 +70,9 @@ function world.match_join_attempt(context, dispatcher, tick, state, presence, me
 end
 
 function world.match_join(context, dispatcher, tick, state, presences)
-    -- nk.logger_info(debug.dump(context));
-    -- nk.logger_info(debug.dump(state));
-    -- nk.logger_info(debug.dump(presences));
+    nk.logger_info(debug.dump(context));
+    nk.logger_info(debug.dump(state));
+    nk.logger_info(debug.dump(presences));
 
     for _, presence in ipairs(presences) do
         local id = presence.session_id
@@ -95,6 +95,8 @@ function world.match_join(context, dispatcher, tick, state, presences)
 end
 
 function world.match_leave(context, dispatcher, tick, state, presences)
+    nk.logger_info(debug.dump(context));
+    
     for _, presence in ipairs(presences) do
         local id = presence.user_id
         -- local new_objects = {
