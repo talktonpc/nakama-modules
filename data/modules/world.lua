@@ -78,7 +78,7 @@ function world.match_join(context, dispatcher, tick, state, presences)
         local id = presence.session_id
         state.presences[id] = presence
         state.locations[id] = {
-            ["x"] = SPAWN_POSITION[1],
+            ["x"] = SPAWN_POSITION[1], 
             ["y"] = SPAWN_POSITION[2],
             ["z"] = SPAWN_POSITION[3]
         }
